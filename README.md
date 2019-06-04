@@ -1,2 +1,3 @@
 # ocr
-a ocr(Optical Character Recognition) tool powered by Baidu Ocr
+使用百度Ocr接口实现的文字识别工具
+调用的百度接口部分使用Python编写, Qt编写界面
