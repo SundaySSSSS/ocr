@@ -1,6 +1,6 @@
 #include "widget.h"
 #include "ui_widget.h"
-#include <QProcess>
+
 #include <QDebug>
 #include <QMessageBox>
 #include <QFileDialog>
@@ -10,10 +10,16 @@ Widget::Widget(QWidget *parent) :
     ui(new Ui::Widget)
 {
     ui->setupUi(this);
+    connect(this, SIGNAL(sendDoOcr(QString,QString)),
+            &m_worker, SLOT(recvDoWork(QString,QString)));
+    connect(&m_worker, SIGNAL(sendResultReady(int)),
+            this, SLOT(recvOrcResult(int)));
 }
 
 Widget::~Widget()
 {
+    m_workerThread.quit();
+    m_workerThread.wait();
     delete ui;
 }
 
@@ -21,25 +27,8 @@ void Widget::on_pushButton_start_clicked()
 {
     QString inputPicPath = ui->lineEdit_inputPic->text();
     QString outputTxtPath = ui->lineEdit_OutputTxt->text();
-
-    if (inputPicPath == "" || outputTxtPath == "")
-    {
-        QMessageBox::warning(this, "错误", "输入文件或输出文件不存在");
-        return;
-    }
-
-    //QString program = "C:/Users/root/Desktop/AipOcr/dist/AipOcr.exe";
-    QString program = "AipOcr.exe";
-    QStringList arguments;
-    arguments << inputPicPath << outputTxtPath;
-
-    QProcess p(this);
-    p.start(program, arguments);
-//    p.waitForStarted();
-//    QByteArray output = p.readAllStandardOutput();
-    p.waitForFinished();
-    QMessageBox::information(this, "通知", "文字识别完成");
-//    qDebug() << output;
+    m_workerThread.start();
+    emit sendDoOcr(inputPicPath, outputTxtPath);
 }
 
 void Widget::on_pushButton_BroserPic_clicked()
@@ -56,4 +45,20 @@ void Widget::on_pushButton_BroserTxt_clicked()
     QString fileName = QFileDialog::getOpenFileName(this,
         tr("打开文本文件"), "", tr("Text Files (*.txt)"));
     ui->lineEdit_OutputTxt->setText(fileName);
+}
+
+void Widget::recvOrcResult(int ret)
+{
+    if (ret == OcrWorker::OK)
+    {
+        QMessageBox::information(this, "通知", "文字识别完成");
+    }
+    else if (ret == OcrWorker::FILE_NOT_EXIST)
+    {
+        QMessageBox::warning(this, "错误", "输入文件或输出文件不存在");
+    }
+    else
+    {
+        QMessageBox::warning(this, "错误", "未知错误");
+    }
 }

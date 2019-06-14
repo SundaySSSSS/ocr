@@ -13,9 +13,11 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        widget.cpp
+        widget.cpp \
+    OcrWorker.cpp
 
-HEADERS  += widget.h
+HEADERS  += widget.h \
+    OcrWorker.h
 
 FORMS    += widget.ui
 
